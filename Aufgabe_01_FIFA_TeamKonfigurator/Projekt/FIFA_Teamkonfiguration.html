@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FIFA Team Selection</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: auto;
+        }
+
+        .header {
+            background: #007bff;
+            color: #fff;
+            padding: 20px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 20px;
+            width: 80%;
+        }
+
+        .selectors {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        select, button {
+            padding: 10px;
+            margin: 0 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        select:hover, button:hover {
+            border-color: #007bff;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .player-info {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .player-info img {
+            width: 50px;
+            height: auto;
+            vertical-align: middle;
+            margin-top: 10px;
+        }
+
+        .teams-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .team {
+            flex: 1;
+            margin: 0 10px;
+        }
+
+        .player {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .player:hover {
+            background-color: #f0f2f5;
+        }
+
+        .player button {
+            margin-left: 10px;
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .player button:hover {
+            background-color: #c82333;
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .search-bar input {
+            padding: 10px;
+            width: 80%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+    </style>
+    <script src="data/teams_fifa22.js"></script>
+    <script src="data/players_fifa23.js"></script>
+</head>
+<body>
+    <div class="header">
+        <h1>FIFA Team Selection</h1>
+    </div>
+
+    <div class="container">
+        <div class="search-bar">
+            <input type="text" id="search_input" placeholder="Search for players..." oninput="search_players()">
+        </div>
+        <div class="selectors">
+            <select id="teams" onchange="change_teams(event)">
+            </select>
+            <select id="team_members">
+            </select>
+            <button id="add_player" onclick="add_player_to_team('A')">Add Player to Team A</button>
+            <button id="add_player_b" onclick="add_player_to_team('B')">Add Player to Team B</button>
+        </div>
+        <img id="player_img" alt="Player Image">
+        <div class="player-info" id="player_info">
+            <p id="player_name"></p>
+            <p id="player_age"></p>
+            <p id="player_nationality"></p>
+            <p id="player_club_name"></p>
+            <img id="player_club_logo" alt="Club Logo">
+        </div>
+    </div>
+
+    <div class="teams-container">
+        <div id="selected_team" class="container team">
+            <h2>Selected Team A</h2>
+            <div id="team_list_a"></div>
+        </div>
+    
+        <div id="selected_team_b" class="container team">
+            <h2>Selected Team B</h2>
+            <div id="team_list_b"></div>
+        </div>
+    </div>
+
+    <script>
+        let selected_team_a = [];
+        let selected_team_b = [];
+        let current_selected_player = null;
+
+        function change_teams(e) {
+            let teams_sel = e.target;
+            let v = teams_sel.value;
+            let t = teams_sel.options[teams_sel.selectedIndex].text;
+            console.log(v + t + e);
+
+            let team_members_sel = document.getElementById("team_members");
+            let current_players = players.filter(p => p.Club === t);
+            console.log(current_players);
+            team_members_sel.innerHTML = "";
+            current_players.forEach(d => team_members_sel.add(new Option(d.Name, d.ID)));
+        }
+
+        function change_team_player(e) {
+            let player_sel = e.target;
+            let v = player_sel.value;
+            let t = player_sel.options[player_sel.selectedIndex].text;
+
+            current_selected_player = players.find(p => p.Name === t);
+            let player_img = document.getElementById("player_img");
+            player_img.src = current_selected_player.Photo;
+
+            document.getElementById("player_name").textContent = `Name: ${current_selected_player.Name}`;
+            document.getElementById("player_age").textContent = `Age: ${current_selected_player.Age}`;
+            document.getElementById("player_nationality").textContent = `Nationality: ${current_selected_player.Nationality}`;
+            document.getElementById("player_club_name").textContent = `Club: ${current_selected_player.Club}`;
+            document.getElementById("player_club_logo").src = current_selected_player["Club Logo"];
+        }
+
+        function add_player_to_team(team) {
+            if (team === 'A' && selected_team_a.length >= 11) {
+                alert("Team A can only have 11 players.");
+                return;
+            }
+            if (team === 'B' && selected_team_b.length >= 11) {
+                alert("Team B can only have 11 players.");
+                return;
+            }
+
+            if (current_selected_player) {
+                if (team === 'A' && !selected_team_a.includes(current_selected_player)) {
+                    selected_team_a.push(current_selected_player);
+                    update_selected_team('A');
+                }
+                if (team === 'B' && !selected_team_b.includes(current_selected_player)) {
+                    selected_team_b.push(current_selected_player);
+                    update_selected_team('B');
+                }
+            }
+        }
+
+        function update_selected_team(team) {
+            let team_list = team === 'A' ? document.getElementById("team_list_a") : document.getElementById("team_list_b");
+            let selected_team = team === 'A' ? selected_team_a : selected_team_b;
+            team_list.innerHTML = "";
+            selected_team.forEach(player => {
+                let player_div = document.createElement("div");
+                player_div.className = "player";
+                
+                let player_img = document.createElement("img");
+                player_img.src = player.Photo;
+                player_img.alt = player.Name;
+                player_img.style.width = "50px"; // Setze die Breite des Bildes
+                player_img.style.height = "auto"; // Behalte das Seitenverhältnis bei
+                player_div.appendChild(player_img);
+                
+                let player_name = document.createElement("span");
+                player_name.textContent = player.Name;
+                player_div.appendChild(player_name);
+                
+                let delete_button = document.createElement("button");
+                delete_button.textContent = "Delete";
+                delete_button.onclick = () => delete_player(player.ID, team);
+                player_div.appendChild(delete_button);
+                
+                team_list.appendChild(player_div);
+            });
+        }
+
+        function delete_player(player_id, team) {
+            if (team === 'A') {
+                selected_team_a = selected_team_a.filter(player => player.ID !== player_id);
+                update_selected_team('A');
+            } else if (team === 'B') {
+                selected_team_b = selected_team_b.filter(player => player.ID !== player_id);
+                update_selected_team('B');
+            }
+        }
+
+        function search_players() {
+            let query = document.getElementById("search_input").value.toLowerCase();
+            let team_members_sel = document.getElementById("team_members");
+            team_members_sel.innerHTML = "";
+            players.filter(player => player.Name.toLowerCase().includes(query))
+                   .forEach(d => team_members_sel.add(new Option(d.Name, d.ID)));
+        }
+
+        let teams_sel = document.getElementById("teams");
+        teams.forEach(d => teams_sel.add(new Option(d.Name, d.ID)));
+        teams_sel.addEventListener("change", change_teams);
+
+        let team_members_sel = document.getElementById("team_members");
+        team_members_sel.addEventListener("change", change_team_player);
+    </script>
+</body>
+</html>
