@@ -7,16 +7,16 @@ let game = {
         this.interval = setInterval(redraw, 20);
         this.intervalNewEnemy = setInterval(newEnemy, 2000);
         this.intervalScore = setInterval(updateScore, 1000);
-        this.intervalDifficulty = setInterval(increaseDifficulty, 10000); // Increase difficulty every 10 seconds
-        this.player = new sprite(70, 70, "img/face-cool.png", 10, 120); // 3 times bigger
+        this.intervalDifficulty = setInterval(increaseDifficulty, 10000); // Schwierigkeit alle 10 Sekunden erhöhen
+        this.player = new sprite(70, 70, "img/face-cool.png", 10, 120);
         this.enemies = [];
         this.bonusPoints = [];
         this.score = 0;
-        this.difficulty = 1; // Initial difficulty level
-        this.maxEnemies = 50; // Limit the number of enemies
-        this.keyCode = -1; //when there is no key pressed
-        this.enemyCount = 0; // Counter for enemies spawned
-        this.isInvincible = false; // Player invincibility state
+        this.difficulty = 1;
+        this.maxEnemies = 50; // Maximaler Gegner
+        this.keyCode = -1;
+        this.enemyCount = 0;
+        this.isInvincible = false; // Spieler ist unverwundbar
         window.addEventListener('keydown', (e) => {
             this.keyCode = e.keyCode;
         });
@@ -33,12 +33,12 @@ let game = {
         clearInterval(this.intervalNewEnemy);
         clearInterval(this.intervalScore);
         clearInterval(this.intervalDifficulty);
-        alert("Game Over! Your score: " + this.score);
+        alert("Game Over! Dein Score: " + this.score);
     }
 }
 
 function start() {
-    console.log("Game started");
+    console.log("Game starten");
     game.start();
 }
 
@@ -79,28 +79,28 @@ function redraw() {
     game.clear();
 
     if (keysPressed.size > 0) {
-        if (keysPressed.has(37) && game.player.x > 0) { // left
+        if (keysPressed.has(37) && game.player.x > 0) { // links
             game.player.x -= 3;
         }
-        if (keysPressed.has(38) && game.player.y > 0) { // up
+        if (keysPressed.has(38) && game.player.y > 0) { // oben
             game.player.y -= 3;
         }
-        if (keysPressed.has(39) && game.player.x < playfieldWidth - game.player.width) { // right
+        if (keysPressed.has(39) && game.player.x < playfieldWidth - game.player.width) { // rechts
             game.player.x += 3;
         }
-        if (keysPressed.has(40) && game.player.y < playfieldHeight - game.player.height) { // down
+        if (keysPressed.has(40) && game.player.y < playfieldHeight - game.player.height) { // unten
             game.player.y += 3;
         }
     }
 
     game.player.redraw();
 
-    // Filter out off-screen enemies
+    // Gegner außerhalb des Spielfeldes filtern
     game.enemies = game.enemies.filter(e => e.x + e.width > 0);
 
     for (let e of game.enemies) {
         let yDelta = Math.floor(Math.random() * 11) - 5;
-        e.x -= game.difficulty; // Increase speed based on difficulty
+        e.x -= game.difficulty;
         e.y += yDelta;
         e.redraw();
 
@@ -110,15 +110,14 @@ function redraw() {
         }
     }
 
-    // Filter out off-screen bonus points
     game.bonusPoints = game.bonusPoints.filter(b => b.x + b.width > 0);
 
     for (let b of game.bonusPoints) {
-        b.x -= game.difficulty; // Move bonus point
+        b.x -= game.difficulty;
         b.redraw();
 
         if (game.player.isCollidingWith(b)) {
-            game.bonusPoints = game.bonusPoints.filter(bp => bp !== b); // Remove collected bonus point
+            game.bonusPoints = game.bonusPoints.filter(bp => bp !== b); // Bonuspunkte entfernen
             activateBonus();
         }
     }
@@ -131,12 +130,12 @@ function redraw() {
 
 function newEnemy() {
     if (game.enemies.length < game.maxEnemies) {
-        let y = Math.floor(Math.random() * (playfieldHeight - 70)); // Ensure enemy spawns within canvas height
+        let y = Math.floor(Math.random() * (playfieldHeight - 70));
         e = new sprite(70, 70, "img/face-monkey.png", playfieldWidth, y); 
         game.enemies.push(e);
         game.enemyCount++;
 
-        // Spawn bonus point every 30 enemies
+        // Bonuspunkt alle 30 Gegner
         if (game.enemyCount % 30 === 0) {
             newBonusPoint();
         }
@@ -144,7 +143,7 @@ function newEnemy() {
 }
 
 function newBonusPoint() {
-    let y = Math.floor(Math.random() * (playfieldHeight - 70)); // Ensure bonus point spawns within canvas height
+    let y = Math.floor(Math.random() * (playfieldHeight - 70));
     let bonus = new sprite(70, 70, "img/face-devilish.png", playfieldWidth, y);
     game.bonusPoints.push(bonus);
 }
@@ -156,7 +155,7 @@ function activateBonus() {
     setTimeout(() => {
         game.isInvincible = false;
         game.player.image.src = "img/face-cool.png";
-    }, 10000); // Revert after 10 seconds
+    }, 10000);
 }
 
 function updateScore() {
@@ -164,7 +163,7 @@ function updateScore() {
 }
 
 function increaseDifficulty() {
-    game.difficulty += 1; // Increase difficulty level
+    game.difficulty += 1;
     clearInterval(game.intervalNewEnemy);
-    game.intervalNewEnemy = setInterval(newEnemy, 2000 / game.difficulty); // Increase spawn rate
+    game.intervalNewEnemy = setInterval(newEnemy, 2000 / game.difficulty);
 }
