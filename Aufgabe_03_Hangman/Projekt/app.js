@@ -7,7 +7,12 @@ new Vue({
         wrongGuesses: 0,
         maxGuesses: 10,
         alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
-        showCheat: false
+        showCheat: false,
+        highscore: 0,
+        timer: null,
+        startTime: null,
+        highscoreTable: [],
+        level: 1
     },
     computed: {
         currentImage() {
@@ -21,6 +26,7 @@ new Vue({
             this.guessedLetters = [];
             this.wrongGuesses = 0;
             this.showCheat = false;
+            this.startTimer();
         },
         guessLetter(letter) {
             this.guessedLetters.push(letter);
@@ -30,6 +36,10 @@ new Vue({
                         this.$set(this.displayedWord, i, letter);
                     }
                 }
+                if (!this.displayedWord.includes('_')) {
+                    this.stopTimer();
+                    this.saveHighscore();
+                }
             } else {
                 this.wrongGuesses++;
             }
@@ -38,10 +48,41 @@ new Vue({
             this.showCheat = !this.showCheat;
         },
         resetGame() {
+            this.level = 1;
+            this.highscoreTable = [];
             this.initializeGame();
+        },
+        nextLevel() {
+            this.saveHighscore();
+            this.level++;
+            this.initializeGame();
+        },
+        startTimer() {
+            this.startTime = Date.now();
+            this.timer = setInterval(() => {
+                this.highscore = Math.floor((Date.now() - this.startTime) / 1000);
+            }, 1000);
+        },
+        stopTimer() {
+            clearInterval(this.timer);
+        },
+        saveHighscore() {
+            const score = {
+                level: this.level,
+                score: this.highscore
+            };
+            this.highscoreTable.push(score);
+            localStorage.setItem('highscoreTable', JSON.stringify(this.highscoreTable));
+        },
+        loadHighscoreTable() {
+            const storedTable = localStorage.getItem('highscoreTable');
+            if (storedTable) {
+                this.highscoreTable = JSON.parse(storedTable);
+            }
         }
     },
     mounted() {
+        this.loadHighscoreTable();
         this.initializeGame();
     }
 });

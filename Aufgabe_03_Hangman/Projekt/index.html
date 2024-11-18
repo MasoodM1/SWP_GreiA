@@ -40,6 +40,16 @@
         </div>
         <div>
             <button @click="resetGame" class="letter-button">Reset</button>
+            <button @click="nextLevel" class="letter-button">Next Level</button>
+        </div>
+        <div>
+            <h2>Highscore: {{ highscore }}</h2>
+            <h3>Highscore Table</h3>
+            <ul>
+                <li v-for="(score, index) in highscoreTable" :key="index">
+                    Level {{ score.level }}: {{ score.score }} points
+                </li>
+            </ul>
         </div>
     </div>
 </body>
