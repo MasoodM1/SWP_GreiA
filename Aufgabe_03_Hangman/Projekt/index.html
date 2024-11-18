@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+    <script src="./data/wordlist.js"></script>
+    <script src="app.js" defer></script>
+    <style>
+        .letter-button {
+            margin: 5px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <img :src="currentImage" alt="Hangman Image">
+        <div>
+            <span v-for="(letter, index) in displayedWord" :key="index">{{ letter }}</span>
+        </div>
+        <div>
+            <button 
+                v-for="letter in alphabet" 
+                :key="letter" 
+                @click="guessLetter(letter)" 
+                :disabled="guessedLetters.includes(letter)"
+                class="letter-button">
+                {{ letter }}
+            </button>
+        </div>
+        <div>
+            <button @click="toggleCheat" class="letter-button">Cheat</button>
+            <span v-if="showCheat">{{ word }}</span>
+        </div>
+        <div>
+            <button @click="resetGame" class="letter-button">Reset</button>
+        </div>
+    </div>
+</body>
+</html>
