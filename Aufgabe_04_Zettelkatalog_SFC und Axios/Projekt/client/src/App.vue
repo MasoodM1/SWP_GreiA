@@ -1,188 +1,152 @@
 <template>
   <div>
-    <input id="search" placeholder="Search" v-model="search" />
-    <br>
-    <br>
-    <table v-if="showEdit">
-      <tr>
-        <th>Image</th>
-        <th>Text</th>
-        <th>Save</th>
-      </tr>
-      <tr>
-        <td><img v-bind:src="this.editElement.img"></td>
-        <td><textarea type="text" v-model="this.editElement.description"></textarea></td>
-        <td><button v-on:click="save()">Save</button></td>
-      </tr>
-      <tr v-for="entry in history">
-        <td>{{ entry.timestamp }}</td>
-        <td>{{ entry.description }}</td>
-        <td><button v-on:click="enterText(entry.id)">Übernehmen</button></td>
-      </tr>
-    </table>
-    <br>
-    <br>
-
+    <input v-model="search" placeholder="Nach Zettel suchen" /> <br />
+    <div v-if="selectedZettel" class="edit-container">
+      <div class="edit-section">
+        <img :src="selectedZettel.img" alt="Zettel Bild" />
+        <textarea v-model="selectedZettel.text"></textarea>
+        <button @click="saveChanges">Speichern</button>
+        <button @click="cancelEdit">Abbrechen</button>
+      </div>
+      <div class="history-section">
+        <h3>Änderungshistorie</h3>
+        <ul>
+          <li v-for="entry in selectedZettelHistory" :key="entry.id" class="history-entry">
+            <div>
+              <strong>Datum:</strong> {{ entry.date }}
+            </div>
+            <div>
+              <strong>Text:</strong> {{ entry.description }}
+            </div>
+            <button @click="applyPreviousVersion(entry.description)">Übernehmen</button>
+          </li>
+        </ul>
+      </div>
+    </div>
     <table>
       <tr>
         <th>Image</th>
         <th>Text</th>
         <th>Edit</th>
       </tr>
-      <tr v-for="zettel in zettelList" :key="zettel.id">
-        <td><img v-bind:src="zettel.img"></td>
-        <td v-html="zettel.descriptionShow"></td>
-        <td class="button"><button v-on:click="edit(zettel.id)">Edit</button></td>
+      <tr v-for="zettel in zettelliste" :key="zettel.id">
+        <td><img :src="zettel.img" /></td>
+        <td v-html="zettel.text"></td>
+        <td><button @click="edit(zettel)">Edit</button></td>
       </tr>
     </table>
   </div>
-
 </template>
 
 <style>
-
-table textarea {
+strong {
+  font-weight: bold;
+}
+input {
   width: 100%;
-  height: 400px;
-  padding: 12px 20px;
-  margin: 8px 0;
+  padding: 12px 16px;
+  margin: 16px 0;
   box-sizing: border-box;
-  border: 2px solid #ccc;
-  border-radius: 4px;
-  background-color: #f8f8f8;
-  resize: none;
   font-size: 16px;
-  font-family: Arial, sans-serif;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  transition: box-shadow 0.3s ease-in-out, border-color 0.3s ease-in-out;
 }
 
-#search {
-  margin-top: 50px;
-  width: 80vw;
-  height: 5vh;
+.edit-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-table, th, td {
+.edit-section {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.edit-section img {
+  width: 200px;
+  height: auto;
+}
+
+textarea {
+  flex: 1;
+  min-height: 100px;
+  padding: 8px;
+}
+
+table {
   width: 80vw;
   border-collapse: collapse;
-  border: solid 1px brown;
 }
 
-th, td {
-  padding: 10px;
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
   text-align: left;
 }
 
 th {
-  background-color: brown;
+  background-color: #f2f2f2;
 }
 
 img {
   width: 500px;
+  height: auto;
 }
 
 button {
-  background-color: brown;
-  color: white;
-  padding: 10px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  margin: 4px 2px;
-  cursor: pointer;
-  border-radius: 5px;
-  border: none;
-  width: 100%;
+  padding: 8px 16px;
+  margin: 8px 4px;
 }
 
-.button {
-  text-align: center;
+.history-section {
+  margin-top: 16px;
 }
 
-.searched-word {
-  font-weight: bold;
+.history-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 8px;
 }
-
-
-
 </style>
+
 <script>
-import axios from 'axios';
+
+import { searchZettel, edit, loadHistory, cancelEdit, saveChanges, applyPreviousVersion } from '@/api.js';
 
 export default {
   data() {
     return {
       search: "",
-      zettelList: [],
-      showEdit: false,
-      editElement: null,
-      history: [],
+      zettelliste: [
+        { id: 1, img: "https://placehold.co/600x400", text: "text1" },
+        { id: 2, img: "https://placehold.co/600x400", text: "text2" },
+        { id: 3, img: "https://placehold.co/600x400", text: "text3" },
+      ],
+      selectedZettel: null,
+      selectedZettelHistory: [],
     };
   },
-  methods:
-  {
-    async edit(id) {
-      console.log("Edit", id);
-      this.editElement = this.zettelList.find((zettel) => zettel.id == id);
-      this.showEdit = true;
-      this.history = await getHistory(this.editElement.id);
-    },
-    save() {
-      console.log("Save", this.editElement.id);
-      patchZettel(this.editElement.id, this.editElement.description, this.editElement.description_old);
-      this.showEdit = false;
-    },
-    enterText(id) {
-      let element = this.history.filter(item => item.id == id)[0];
-      console.log(element);
-      this.editElement.description = element.description;
-    }
+  methods: {
+    searchZettel,
+    edit,
+    loadHistory,
+    cancelEdit,
+    saveChanges,
+    applyPreviousVersion,
   },
   watch: {
-    search: async function (val) {
-          this.zettelList = await getZettelList(val);
+    search(val) {
+      this.searchZettel(val);
     },
   },
 };
-
-export async function getZettelList(val) {
-  const response = await axios.get('http://localhost:5000/cat-search/' + val,{}); 
-  console.log(response.data);
-  let data = await response.data;
-  data = data.slice(0, 30);
-  data = data.map((zettel) => {
-    zettel.img = "http://webapp.uibk.ac.at/ubi/cat/" + zettel.thumb;
-    zettel.descriptionShow = zettel.description;
-        zettel.descriptionShow = zettel.descriptionShow.replace(new RegExp(`${val}`, 'gi'), match => {
-          return '<span class="searched-word">' + match + '</span>';
-        });
-        zettel.description_old = zettel.description;
-        return zettel;
-          });
-  return data;
-}
-
-export async function patchZettel(id, description, description_old) {
-  const response = await axios.patch('http://localhost:5000/cat-item/' + id, {
-    params: {
-      description: description
-    }
-  });
-
-  console.log(response.data);
-
-  const response2 = await axios.put('http://localhost:5000/cat-history/' + id, {
-    params: {
-      description: description_old,
-      catalog_id: id
-    }
-  });
-  console.log(response2.data);
-}
-
-export async function getHistory(id) {
-  const response = await axios.get('http://localhost:5000/cat-history/' + id);
-  return await response.data; 
-}
-
 </script>

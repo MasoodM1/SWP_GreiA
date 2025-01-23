@@ -1,7 +1,7 @@
 from flask import Flask, request,jsonify
 from sqlalchemy import Column, Integer, Text, Float, DateTime, create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql.expression import func
 from flask_restful import Resource, Api
 from dataclasses import dataclass
@@ -77,6 +77,10 @@ def shutdown_session(exception=None):
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+
+@app.route('/')
+def home():
+    return "Der Server läuft und ist bereit!"
 
 
 if __name__ == '__main__':
