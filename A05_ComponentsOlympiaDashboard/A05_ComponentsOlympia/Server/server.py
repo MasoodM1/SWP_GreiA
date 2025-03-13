@@ -1,5 +1,5 @@
 from flask import Flask, request,jsonify
-from sqlalchemy import Column, Integer, Text, Float, DateTime, create_engine, ForeignKey, func, and_
+from sqlalchemy import Column, Integer, Text, Float, DateTime, create_engine, ForeignKey, func, and_, text
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import func
@@ -13,7 +13,7 @@ from flask_cors import CORS, cross_origin
 Base = declarative_base()  # Basisklasse aller in SQLAlchemy verwendeten Klassen
 metadata = Base.metadata
 
-engine = create_engine('sqlite:///olympics.db', echo=True)
+engine = create_engine('sqlite:///A05_ComponentsOlympiaDashboard/A05_ComponentsOlympia/Server/olympics.db', echo=True)
 
 db_session = scoped_session(sessionmaker(autoflush=True, bind=engine))
 Base.query = db_session.query_property() #Dadurch hat jedes Base - Objekt (also auch ein GeoInfo) ein Attribut query für Abfragen
@@ -99,29 +99,39 @@ def medals(noc):
     m = medals_by_noc(noc)
     return jsonify(m)
 
-@app.route('/medals2/<string:noc>')
-def medals2(noc):
+@app.route('/medals2/<string:region>')
+def medals2(region):
+    noc_entry = db_session.query(NocRegions.noc).filter(NocRegions.region == region).first()
+    
+    if not noc_entry:
+        return jsonify({"error": "Region not found"}), 404 
+    
+    noc = noc_entry.noc 
+
     m = medals_by_noc(noc)
+
     key = []
     val = []
     for i in m:
-        print(i[0] , i[1])
+        print(i[0], i[1])
         key.append(i[0])
         val.append(i[1])
-    res = [{'x' : key, 'y' : val , 'type':'bar'}]
+
+    res = [{'x': key, 'y': val, 'type': 'bar'}]
     return j.dumps(res)
+
 
 
 @app.route('/count_by_sex')
 def events_group_by_sex():
-    res = engine.execute("SELECT sex, medal, count(*) FROM athlete_events WHERE medal != 'NA' GROUP BY sex, medal")
+    res = db_session.execute(text("SELECT sex, medal, count(*) FROM athlete_events WHERE medal != 'NA' GROUP BY sex, medal"))
     res = [(row[0], row[1], row[2]) for row in res]
     print(res)
     return j.dumps(res)
 
 @app.route('/count_by_sex2')
 def events_group_by_sex2():
-    res = engine.execute("SELECT sex, medal, count(*) FROM athlete_events WHERE medal != 'NA' GROUP BY sex, medal")
+    res = db_session.execute(text("SELECT sex, medal, count(*) FROM athlete_events WHERE medal != 'NA' GROUP BY sex, medal"))
     keyM = []
     valM = []
     keyF = []
@@ -137,6 +147,74 @@ def events_group_by_sex2():
     res = [{'x': keyM, 'y': valM, 'type': 'bar'},{'x': keyF, 'y': valF, 'type': 'bar'}]
     return j.dumps(res)
 
+@app.route('/medals_over_time/<string:country>')
+def medals_over_time(country):
+    noc_entry = db_session.query(NocRegions.noc).filter(NocRegions.region == country).first()
+    
+    if not noc_entry:
+        return jsonify({"error": "Country not found"}), 404
+    
+    noc = noc_entry.noc
+    
+    res = db_session.query(AthleteEvents.year, AthleteEvents.medal, func.count(AthleteEvents.medal))\
+        .filter(and_(AthleteEvents.medal != 'NA', AthleteEvents.noc == noc))\
+        .group_by(AthleteEvents.year, AthleteEvents.medal)\
+        .order_by(AthleteEvents.year).all()
+
+    data = {}
+    for year, medal, count in res:
+        if year not in data:
+            data[year] = {"Gold": 0, "Silver": 0, "Bronze": 0}
+        data[year][medal] = count
+
+    result = [{"year": year, **medals} for year, medals in data.items()]
+    return jsonify(result)
+
+
+@app.route("/medals_by_age")
+def medals_by_age():
+    query = text("""
+        SELECT CAST(Age AS INTEGER) AS age, COUNT(*) as count
+        FROM athlete_events
+        WHERE Age IS NOT NULL AND Medal IS NOT NULL
+        GROUP BY Age
+        ORDER BY age
+    """)
+
+    with engine.connect() as conn:
+        result = conn.execute(query)
+        data = [{"age": row[0], "count": row[1]} for row in result]
+
+    return jsonify({"ages": [d["age"] for d in data], "counts": [d["count"] for d in data]})
+
+
+@app.route('/top_sports')
+def top_sports():
+   
+    result = db_session.query(AthleteEvents.sport, func.count(AthleteEvents.medal))\
+        .filter(AthleteEvents.medal != 'NA')\
+        .group_by(AthleteEvents.sport)\
+        .order_by(func.count(AthleteEvents.medal).desc())\
+        .limit(5).all()  
+    
+    sports = [sport for sport, _ in result]
+    medal_counts = [count for _, count in result]
+    
+    return jsonify({"sports": sports, "counts": medal_counts})
+
+@app.route('/medals_by_country')
+def medals_by_country():
+    result = db_session.query(NocRegions.region, func.count(AthleteEvents.medal))\
+        .join(AthleteEvents, NocRegions.noc == AthleteEvents.noc)\
+        .filter(AthleteEvents.medal != 'NA')\
+        .group_by(NocRegions.region)\
+        .order_by(func.count(AthleteEvents.medal).desc())\
+        .all()
+
+    countries = [region for region, _ in result]
+    medal_counts = [count for _, count in result]
+    
+    return jsonify({"countries": countries, "counts": medal_counts})
 
 
 @app.teardown_appcontext
